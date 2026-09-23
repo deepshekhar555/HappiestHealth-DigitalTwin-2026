@@ -140,4 +140,22 @@ export const getTelemetryWebSocketUrl = () => {
   return `${wsProtocol}://${host}`;
 };
 
+
+// ============================================
+// Gait Metrics Session API Methods
+// ============================================
+
+/** Fetch all recorded gait sessions */
+export const getSessions = () => apiClient.get('/metrics/sessions');
+
+/** Record the next synthetic gait session */
+export const recordSession = () => apiClient.post('/metrics/session/record');
+
+/** Get the most recent session with explainability */
+export const getLatestSession = () => apiClient.get('/metrics/session/latest');
+
+/** Reset the session store (demo reset) */
+export const resetSessions = () => apiClient.delete('/metrics/sessions/reset');
+
 export default apiClient;
+

@@ -143,6 +143,10 @@ const negotiationRoutes = require('./routes/negotiation.routes');
 // Public routes
 app.use('/api/auth', authRoutes);
 
+// Gait Session & Telemetry metrics (public for demo flow)
+const metricsRoutes = require('./routes/metrics.routes');
+app.use('/api/metrics', metricsRoutes);
+
 // Health check endpoint (public - no auth required)
 app.get('/api/health', (req, res) => {
   const telemetryServer = require('./websocket/telemetryServer');

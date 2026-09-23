@@ -34,6 +34,8 @@ import apiClient, { startNegotiationSync, injectIntervention } from '../api/apiC
 import PatientProfilePanel from '../components/PatientProfilePanel';
 import LiveTelemetryCommandCenter from '../components/LiveTelemetryCommandCenter';
 import OutcomeTrajectoryChart from '../components/OutcomeTrajectoryChart';
+import GaitSessionPanel from '../components/GaitSessionPanel';
+import HolographicBodyViewer from '../components/HolographicBodyViewer';
 
 // =============================================================================
 // CONFIGURATION: New sidebar structure for consensus-centered dashboard
@@ -88,6 +90,12 @@ const AGENT_CONFIG = {
 };
 
 const sectionThemes = {
+  gait: {
+    layer: 'Gait Sessions · Digital Twin',
+    description: 'Session-based gait metrics, rehabilitation trend monitoring, and AI explainability.',
+    accentBg: 'bg-emerald-100',
+    accentText: 'text-emerald-700',
+  },
   overview: {
     layer: 'Consensus Overview',
     description: 'Multi-agent consensus summary with transparent reasoning and recommendations.',
@@ -121,6 +129,12 @@ const sectionThemes = {
   hera: {
     layer: 'HERA Guardian',
     description: 'Economic constraints, insurance validation, and real-world treatment viability.',
+    accentBg: 'bg-cyan-100',
+    accentText: 'text-cyan-700',
+  },
+  body3d: {
+    layer: '3D Body Simulation',
+    description: 'Iron Man-style holographic body viewer with medical hotspots and treatment overlays.',
     accentBg: 'bg-cyan-100',
     accentText: 'text-cyan-700',
   },
@@ -260,6 +274,7 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
   const [result, setResult] = useState(null);
 
   const [treatmentPlan] = useState({ type: 'Standard', dosage: 'Medium', duration: 30 });
+  const [appliedProtocol, setAppliedProtocol] = useState(false);
 
   // Consensus simulation state
   const [consensusStatus, setConsensusStatus] = useState('idle'); // idle, running, consensus
@@ -691,6 +706,7 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
   // New sidebar sections
   const sections = [
     { key: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'workspace' },
+    { key: 'gait', label: 'Gait Sessions', icon: Activity, group: 'workspace' },
     { key: 'divider1', divider: true, label: 'Case Context' },
     { key: 'profile', label: 'Patient Profile', icon: User, group: 'context' },
     { key: 'divider2', divider: true, label: 'Agent Perspectives' },
@@ -699,6 +715,7 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
     { key: 'endocrinologist', label: 'Endocrinologist', icon: Zap, group: 'agents', color: '#f59e0b' },
     { key: 'hera', label: 'HERA Guardian', icon: Shield, group: 'agents', color: '#06b6d4' },
     { key: 'divider3', divider: true, label: 'Outcome' },
+    { key: 'body3d', label: '3D Body Sim', icon: Activity, group: 'outcome' },
     { key: 'trajectory', label: 'Trajectory', icon: TrendingUp, group: 'outcome' },
     { key: 'recommendation', label: 'Recommendation', icon: FileCheck, group: 'outcome' },
   ];
@@ -1907,15 +1924,53 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
                 <span className="font-semibold text-slate-700">Rounds: <span className="text-slate-600">{consensusResult.rounds}</span></span>
               </div>
               <button
-                onClick={() => {
-                  // Future: Apply to treatment plan
-                  alert('Protocol applied to treatment plan!');
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors"
+                id="apply-treatment-plan-btn"
+                onClick={() => setAppliedProtocol(true)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 shadow-md ${
+                  appliedProtocol
+                    ? 'bg-emerald-600 text-white shadow-emerald-200 ring-2 ring-emerald-400'
+                    : 'bg-slate-900 text-white hover:bg-slate-800 active:scale-95'
+                }`}
               >
-                Apply to Treatment Plan
-                <ChevronRight className="h-4 w-4" />
+                {appliedProtocol ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-white animate-bounce" />
+                    Protocol Active in Twin
+                  </>
+                ) : (
+                  <>
+                    Apply to Treatment Plan
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
+              {appliedProtocol && (
+              <div className="mt-4 p-4 bg-emerald-50/90 border border-emerald-300 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-fadeIn shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-950">Treatment Protocol Successfully Deployed to Digital Twin</p>
+                    <p className="text-xs text-emerald-700">Regimen is now actively simulated. Projected organ vitality, risk metrics, and gait indicators are synchronized.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openSection('trajectory')}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                  >
+                    View Trajectory →
+                  </button>
+                  <button
+                    onClick={() => openSection('gait')}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                  >
+                    Gait Sessions →
+                  </button>
+                </div>
+              </div>
+            )}
             </div>
           </div>
         )}
@@ -2122,6 +2177,8 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
   // Section Router
   const renderSection = () => {
     switch (activeSection) {
+      case 'gait':
+        return <GaitSessionPanel />;
       case 'profile':
         return renderProfile();
       case 'geneticist':
@@ -2129,6 +2186,8 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
       case 'endocrinologist':
       case 'hera':
         return renderAgentDetail(activeSection);
+      case 'body3d':
+        return <HolographicBodyViewer patient={patient} />;
       case 'trajectory':
         return renderTrajectory();
       case 'recommendation':

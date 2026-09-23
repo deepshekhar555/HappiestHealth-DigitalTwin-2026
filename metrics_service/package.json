@@ -1,0 +1,20 @@
+{
+  "name": "biotwin-metrics-service",
+  "version": "1.0.0",
+  "description": "Specialized Biomechanical and Cardiopulmonary Vital Metrics Engine for BioTwin Digital Twin",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node -e \"const m = require('./index'); console.log('Metrics service initialized successfully')\""
+  },
+  "keywords": [
+    "digital-twin",
+    "gait",
+    "telemetry",
+    "vitals",
+    "rehabilitation",
+    "biotwin"
+  ],
+  "author": "BioTwin AI Team",
+  "license": "MIT"
+}
