@@ -1,0 +1,41 @@
+{
+  "id": "scenario-01-stable",
+  "name": "Stable Baseline Patient",
+  "description": "Normotensive, healthy cardiovascular tone with minor physiological oscillations.",
+  "durationSeconds": 60,
+  "keyFrames": [
+    {
+      "time": 0,
+      "heartRate": 72,
+      "systolicBP": 120,
+      "diastolicBP": 80,
+      "spo2": 99,
+      "temperature": 36.8,
+      "respiratoryRate": 15,
+      "glucose": 102,
+      "oldpeak": 0
+    },
+    {
+      "time": 30,
+      "heartRate": 75,
+      "systolicBP": 122,
+      "diastolicBP": 82,
+      "spo2": 98,
+      "temperature": 36.9,
+      "respiratoryRate": 16,
+      "glucose": 105,
+      "oldpeak": 0.1
+    },
+    {
+      "time": 60,
+      "heartRate": 71,
+      "systolicBP": 119,
+      "diastolicBP": 79,
+      "spo2": 99,
+      "temperature": 36.8,
+      "respiratoryRate": 15,
+      "glucose": 101,
+      "oldpeak": 0
+    }
+  ]
+}

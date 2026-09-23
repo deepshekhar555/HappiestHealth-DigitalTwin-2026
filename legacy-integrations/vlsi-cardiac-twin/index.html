@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Cardiac Digital Twin</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Sidebar -->
+
+    <div class="sidebar">
+
+        <h2>❤️ CardioAI</h2>
+
+        <ul>
+    <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#digitaltwin">Digital Twin</a></li>
+    <li><a href="#prediction">Prediction</a></li>
+    <li><a href="#results">Results</a></li>
+</ul>
+
+    </div>
+
+    <!-- Main -->
+
+    <div class="main">
+
+        <div class="header">
+            
+            <div id="dashboard">
+    <h1>AI Cardiac Arrest Digital Twin</h1>
+</div>
+            <p>Physics-Informed Heart Risk Prediction System</p>
+        </div>
+
+        <!-- Cards -->
+
+        <div class="stats-cards">
+
+    <div class="stat-card">
+        <h3>Accuracy</h3>
+        <h2>90.2%</h2>
+    </div>
+
+    <div class="stat-card">
+        <h3>Model</h3>
+        <h2>Extra Trees</h2>
+    </div>
+
+    <div class="stat-card">
+        <h3>Digital Twin</h3>
+        <h2>Active</h2>
+    </div>
+
+    <div class="stat-card">
+        <h3>Status</h3>
+        <h2>Online</h2>
+    </div>
+
+</div>
+
+        <!-- Content -->
+
+        <div class="content">
+
+            <div class="twin-section">
+
+
+            <div id="digitaltwin" class="heart-panel"></div>
+
+                <video class="heart-video" autoplay loop muted playsinline>
+    <source src="{{ url_for('static', filename='videos/heart.mp4') }}" type="video/mp4"
+</video>
+
+                <h2>Heart Digital Twin</h2>
+
+            </div>
+
+            <!-- Prediction Form -->
+
+            <div class="form-panel">
+
+                <div id="prediction">
+<form action="/predict" method="POST">
+
+                    <div class="grid">
+
+                        <input type="number" step="any" name="Age" placeholder="Age" required>
+
+                        <select name="Sex">
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+
+                        <select name="ChestPainType">
+                            <option value="ATA">ATA</option>
+                            <option value="NAP">NAP</option>
+                            <option value="ASY">ASY</option>
+                            <option value="TA">TA</option>
+                        </select>
+
+                        <input type="number" step="any" name="RestingBP" placeholder="Resting BP" required>
+
+                        <input type="number" step="any" name="Cholesterol" placeholder="Cholesterol" required>
+
+                        <input type="number" step="any" name="FastingBS" placeholder="Fasting Blood Sugar" required>
+
+                        <select name="RestingECG">
+                            <option value="Normal">Normal ECG</option>
+                            <option value="LVH">LVH</option>
+                            <option value="ST">ST</option>
+                        </select>
+
+                        <input type="number" step="any" name="MaxHR" placeholder="Max Heart Rate" required>
+
+                        <select name="ExerciseAngina">
+                            <option value="N">No Angina</option>
+                            <option value="Y">Angina</option>
+                        </select>
+
+                        <input type="number" step="any" name="Oldpeak" placeholder="Old Peak" required>
+
+                        <select name="ST_Slope">
+                            <option value="Up">Up</option>
+                            <option value="Flat">Flat</option>
+                            <option value="Down">Down</option>
+                        </select>
+
+                        <!-- Extra UI Fields -->
+
+                        <input type="number" placeholder="Height (cm)">
+                        <input type="number" placeholder="Weight (kg)">
+                        <input type="number" placeholder="BMI">
+                        <input type="number" placeholder="Smoking (0/1)">
+                        <input type="number" placeholder="Alcohol (0/1)">
+                        <input type="number" placeholder="Physical Activity">
+                        <input type="number" placeholder="Family History (0/1)">
+                        <input type="number" placeholder="Hypertension (0/1)">
+
+                    </div>
+
+                    <button type="submit">
+                        Predict Cardiac Risk
+                    </button>
+
+                </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Result Section -->
+        <div id="results"></div>
+
+        {% if prediction %}
+
+        <div class="result">
+
+    <div class="risk-banner">
+
+        <h1 style="color:{{color}}">
+            {{ prediction }}
+        </h1>
+
+        <h3>
+            Risk Probability :
+            {{ probability }} %
+        </h3>
+
+    </div>
+
+    <div class="gauge-card">
+
+        <h3>Risk Probability Gauge</h3>
+
+        <div class="progress-container">
+
+            <div
+                class="progress-bar"
+                style="width: {{ probability }}%;"
+            ></div>
+
+        </div>
+
+        <div class="scale">
+
+            <span>0%</span>
+            <span>25%</span>
+            <span>50%</span>
+            <span>75%</span>
+            <span>100%</span>
+
+        </div>
+        <h2 class="risk-percent">
+    {{ probability }}%
+</h2>
+
+        <h2>{{ probability }}%</h2>
+
+    </div>
+    <div class="chart-section">
+
+    <div class="chart-card">
+        <h3>Cardiac Status</h3>
+        <canvas id="riskChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h3>Hemodynamic Risk Profile</h3>
+        <canvas id="radarChart"></canvas>
+    </div>
+
+</div>
+
+
+            <div class="metrics">
+
+                <div class="metric-box">
+                    MAP
+                    <br>
+                    {{ map_value }}
+                </div>
+
+                <div class="metric-box">
+                    Pulse Pressure
+                    <br>
+                    {{ pulse_pressure }}
+                </div>
+
+                <div class="metric-box">
+                    Cardiac Load
+                    <br>
+                    {{ cardiac_load }}
+                </div>
+
+                <div class="metric-box">
+                    Cardiac Stress
+                    <br>
+                    {{ cardiac_stress }}
+                </div>
+
+                <div class="metric-box">
+                    Heart Workload
+                    <br>
+                    {{ heart_workload }}
+                </div>
+
+            </div>
+
+        <div class="patient-summary">
+
+            <h2>👤 Patient Summary</h2>
+
+            <div class="summary-grid">
+
+            <div class="summary-box">
+                <h3>Risk Score</h3>
+                <p>{{ probability }}%</p>
+            </div>
+
+            <div class="summary-box">
+                <h3>MAP</h3>
+                <p>{{ map_value }}</p>
+            </div>
+
+            <div class="summary-box">
+                <h3>Pulse Pressure</h3>
+                <p>{{ pulse_pressure }}</p>
+            </div>
+
+            <div class="summary-box">
+                <h3>Status</h3>
+                <p>{{ prediction }}</p>
+            </div>
+
+    </div>
+
+</div>
+<div class="twin-card">
+
+    <h2>❤️ Digital Twin Health Score</h2>
+
+    <div class="health-score">
+
+        {% if probability|float >= 75 %}
+            <h1 style="color:#ef4444;">25 / 100</h1>
+            <p>Critical Condition</p>
+
+        {% elif probability|float >= 40 %}
+            <h1 style="color:#f59e0b;">60 / 100</h1>
+            <p>Moderate Risk</p>
+
+        {% else %}
+            <h1 style="color:#22c55e;">90 / 100</h1>
+            <p>Healthy Condition</p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+            
+            <div class="ai-panel">
+
+    <h2>🧠 AI Recommendations</h2>
+
+    {% if probability|float >= 75 %}
+
+    <div class="recommendation high">
+        Critical cardiac risk detected.
+        Immediate medical attention recommended.
+    </div>
+
+    {% elif probability|float >= 40 %}
+
+    <div class="recommendation medium">
+        Moderate cardiac risk detected.
+        Lifestyle modifications recommended.
+    </div>
+
+    {% else %}
+
+    <div class="recommendation low">
+        Low cardiac risk detected.
+        Continue regular cardiac monitoring.
+    </div>
+
+    {% endif %}
+
+</div>
+<div class="trend-card">
+
+    <h2>📈 Cardiac Vital Trend</h2>
+
+    <canvas id="trendChart"></canvas>
+
+</div>
+</div>
+<div class="risk-levels">
+
+    <div class="risk-card low">
+        <h3>Low Risk</h3>
+        <h1>0 - 39%</h1>
+    </div>
+
+    <div class="risk-card medium">
+        <h3>Moderate Risk</h3>
+        <h1>40 - 74%</h1>
+    </div>
+
+    <div class="risk-card high">
+        <h3>High Risk</h3>
+        <h1>75 - 100%</h1>
+    </div>
+
+</div>
+<div class="explanation-card">
+
+    <h2>🤖 AI Decision Explanation</h2>
+
+    <ul>
+
+        {% if prediction == "High Risk" %}
+        <li>Elevated cardiac workload detected.</li>
+        <li>Abnormal hemodynamic profile observed.</li>
+        <li>Risk score exceeds safe threshold.</li>
+        <li>Immediate clinical review recommended.</li>
+
+        {% else %}
+        <li>Cardiac parameters within acceptable limits.</li>
+        <li>Hemodynamic profile appears stable.</li>
+        <li>No major risk indicators detected.</li>
+        <li>Continue routine monitoring.</li>
+        {% endif %}
+
+    </ul>
+
+</div>
+
+
+<div class="physics-panel">
+
+<h2>🫀 Cardiac Parameters</h2>
+
+<div class="physics-grid">
+
+<div class="physics-box">
+<h3>Cardiac Output</h3>
+<p>{{ (heart_workload/1000)|round(2) }} L/min</p>
+</div>
+
+<div class="physics-box">
+<h3>Stroke Volume</h3>
+<p>{{ (pulse_pressure*0.8)|round(2) }} mL</p>
+</div>
+
+<div class="physics-box">
+<h3>Heart Efficiency</h3>
+<p>{{ (100-probability)|round(1) }} %</p>
+</div>
+
+<div class="physics-box">
+<h3>Vascular Resistance</h3>
+<p>{{ (map_value*1.2)|round(2) }}</p>
+</div>
+
+</div>
+
+</div>
+
+<div class="ecg-panel">
+
+<h2>📈 Live ECG Monitor</h2>
+
+<canvas id="ecgChart"></canvas>
+
+</div>
+
+
+
+<div class="equation-panel">
+
+<h2>⚙️ Physics Engine</h2>
+
+<div class="equation-box">
+
+<p>MAP = (SBP + 2 × DBP) / 3</p>
+
+<p>Pulse Pressure = SBP − DBP</p>
+
+<p>Cardiac Load = MAP × Heart Rate</p>
+
+<p>Heart Workload = Cardiac Load × Risk</p>
+
+</div>
+
+</div>
+
+<div class="health-score">
+
+<h2>❤️ Digital Twin Health Score</h2>
+
+{% set score = (100 - probability)|round(0) %}
+
+<h1>{{ score }}/100</h1>
+
+{% if score >= 80 %}
+<p>Excellent Condition</p>
+
+{% elif score >= 60 %}
+<p>Good Condition</p>
+
+{% elif score >= 40 %}
+<p>Moderate Condition</p>
+
+{% else %}
+<p>Critical Condition</p>
+
+{% endif %}
+
+</div>
+<div class="survival-panel">
+
+<h2>🫀 Survival Probability</h2>
+
+<h1>{{ (100-probability)|round(1) }}%</h1>
+
+{% if probability|float >= 75 %}
+<p>Low survival probability. Immediate intervention required.</p>
+
+{% elif probability|float >= 40 %}
+<p>Moderate survival probability.</p>
+
+{% else %}
+<p>High survival probability.</p>
+
+{% endif %}
+
+</div>
+<div class="gauge-panel">
+
+<h2>🎯 Risk Meter</h2>
+
+{% if probability|float >= 75 %}
+<div class="risk-gauge high">
+
+{% elif probability|float >= 40 %}
+<div class="risk-gauge medium">
+
+{% else %}
+<div class="risk-gauge low">
+
+{% endif %}
+
+<h1>{{ probability }}%</h1>
+
+<p>{{ prediction }}</p>
+
+</div>
+
+</div>
+
+<div class="recommendation-panel">
+    <h2>💊 AI Clinical Recommendation</h2>
+
+    {% if probability|float >= 75 %}
+        <ul>
+            <li>Immediate cardiology consultation recommended.</li>
+            <li>Continuous ECG monitoring required.</li>
+            <li>Monitor blood pressure every 15 minutes.</li>
+            <li>Consider ICU admission.</li>
+        </ul>
+
+    {% elif probability|float >= 40 %}
+        <ul>
+            <li>Regular ECG monitoring advised.</li>
+            <li>Maintain healthy lifestyle.</li>
+            <li>Review medications.</li>
+            <li>Follow-up within 48 hours.</li>
+        </ul>
+
+    {% else %}
+        <ul>
+            <li>Low risk detected.</li>
+            <li>Continue exercise routine.</li>
+            <li>Maintain healthy diet.</li>
+            <li>Annual cardiac screening recommended.</li>
+        </ul>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+{% if prediction %}
+const riskValue = {{ probability|default(0) }};
+
+new Chart(
+document.getElementById('riskChart'),
+{
+type:'doughnut',
+
+data:{
+    labels:['Risk','Safe'],
+    datasets:[{
+        data:[riskValue,100-riskValue],
+
+        backgroundColor:[
+        '#ef4444',   // Risk = Red
+        '#22c55e'    // Safe = Green
+    ]
+}]
+
+},
+
+options:{
+responsive:true,
+cutout:'70%'
+}
+}
+);
+
+new Chart(
+document.getElementById('radarChart'),
+{
+type:'radar',
+
+data:{
+labels:[
+'MAP',
+'Pulse Pressure',
+'Cardiac Load',
+'Stress',
+'Workload'
+],
+
+datasets:[{
+label:'Patient Profile',
+data:[
+{{ map_value }},
+{{ pulse_pressure }},
+{{ cardiac_load/1000 }},
+{{ cardiac_stress }},
+{{ heart_workload/1000 }}
+]
+}]
+},
+
+options:{
+responsive:true
+}
+}
+);
+
+new Chart(
+document.getElementById('trendChart'),
+{
+    type:'line',
+
+    data:{
+        labels:['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6','Day 7'],
+
+        datasets:[{
+            label:'Heart Health Score',
+            data:[60,65,63,70,68,75,80],
+            tension:0.4
+        }]
+    },
+
+    options:{
+        responsive:true
+    }
+}
+);
+
+new Chart(
+document.getElementById('ecgChart'),
+{
+type:'line',
+
+data:{
+labels:['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'],
+datasets:[{
+label:'ECG Signal',
+data:[0,1,0,2,8,1,0,1,0,2,7,1,0,1,0],
+borderColor:'#00ff88',
+borderWidth:3,
+fill:false,
+tension:0.2
+}]
+},
+
+options:{
+responsive:true,
+plugins:{
+legend:{
+labels:{
+color:'white'
+}
+}
+},
+scales:{
+x:{
+ticks:{color:'white'}
+},
+y:{
+ticks:{color:'white'}
+}
+}
+}
+}
+);
+
+setInterval(() => {
+
+ecgChart.data.datasets[0].data.shift();
+
+ecgChart.data.datasets[0].data.push(
+Math.floor(Math.random()*8)
+);
+
+ecgChart.update();
+
+},1000);
+
+
+{% endif %}
+
+</script>
+
+</body>
+</html>

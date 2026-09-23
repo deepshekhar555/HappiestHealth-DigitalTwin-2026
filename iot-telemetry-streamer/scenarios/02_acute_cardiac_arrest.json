@@ -1,0 +1,63 @@
+{
+  "id": "scenario-02-cardiac",
+  "name": "Acute Coronary Deterioration & Impending Cardiac Arrest",
+  "description": "Rapid ST-segment depression elevation, tachycardia followed by cardiovascular collapse, and elevated shock index.",
+  "durationSeconds": 60,
+  "keyFrames": [
+    {
+      "time": 0,
+      "heartRate": 85,
+      "systolicBP": 135,
+      "diastolicBP": 88,
+      "spo2": 97,
+      "temperature": 37,
+      "respiratoryRate": 18,
+      "glucose": 120,
+      "oldpeak": 0.5
+    },
+    {
+      "time": 15,
+      "heartRate": 110,
+      "systolicBP": 145,
+      "diastolicBP": 95,
+      "spo2": 94,
+      "temperature": 37.1,
+      "respiratoryRate": 22,
+      "glucose": 135,
+      "oldpeak": 1.8
+    },
+    {
+      "time": 30,
+      "heartRate": 135,
+      "systolicBP": 110,
+      "diastolicBP": 75,
+      "spo2": 90,
+      "temperature": 37.2,
+      "respiratoryRate": 26,
+      "glucose": 145,
+      "oldpeak": 2.9
+    },
+    {
+      "time": 45,
+      "heartRate": 148,
+      "systolicBP": 85,
+      "diastolicBP": 55,
+      "spo2": 84,
+      "temperature": 37.4,
+      "respiratoryRate": 30,
+      "glucose": 160,
+      "oldpeak": 3.8
+    },
+    {
+      "time": 60,
+      "heartRate": 162,
+      "systolicBP": 65,
+      "diastolicBP": 40,
+      "spo2": 78,
+      "temperature": 37.5,
+      "respiratoryRate": 34,
+      "glucose": 175,
+      "oldpeak": 4.5
+    }
+  ]
+}

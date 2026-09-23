@@ -1,0 +1,52 @@
+{
+  "id": "scenario-04-hypertensive",
+  "name": "Hypertensive Crisis & Acute Cerebrovascular Stroke",
+  "description": "Malignant arterial pressure surge exceeding 200 mmHg systolic with extreme pulse pressure and cerebral risk.",
+  "durationSeconds": 60,
+  "keyFrames": [
+    {
+      "time": 0,
+      "heartRate": 78,
+      "systolicBP": 155,
+      "diastolicBP": 96,
+      "spo2": 98,
+      "temperature": 36.9,
+      "respiratoryRate": 16,
+      "glucose": 110,
+      "oldpeak": 0.3
+    },
+    {
+      "time": 20,
+      "heartRate": 88,
+      "systolicBP": 182,
+      "diastolicBP": 112,
+      "spo2": 97,
+      "temperature": 37,
+      "respiratoryRate": 19,
+      "glucose": 118,
+      "oldpeak": 0.7
+    },
+    {
+      "time": 40,
+      "heartRate": 98,
+      "systolicBP": 210,
+      "diastolicBP": 124,
+      "spo2": 96,
+      "temperature": 37.1,
+      "respiratoryRate": 23,
+      "glucose": 125,
+      "oldpeak": 1.2
+    },
+    {
+      "time": 60,
+      "heartRate": 108,
+      "systolicBP": 228,
+      "diastolicBP": 135,
+      "spo2": 94,
+      "temperature": 37.3,
+      "respiratoryRate": 26,
+      "glucose": 132,
+      "oldpeak": 1.6
+    }
+  ]
+}

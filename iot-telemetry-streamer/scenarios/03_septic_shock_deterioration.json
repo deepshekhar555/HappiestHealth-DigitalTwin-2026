@@ -1,0 +1,52 @@
+{
+  "id": "scenario-03-sepsis",
+  "name": "Septic Shock & Systemic Inflammatory Deterioration",
+  "description": "Hyperthermia, extreme vasodilation, drop in Mean Arterial Pressure below 60 mmHg, and severe hypoperfusion.",
+  "durationSeconds": 60,
+  "keyFrames": [
+    {
+      "time": 0,
+      "heartRate": 92,
+      "systolicBP": 115,
+      "diastolicBP": 72,
+      "spo2": 96,
+      "temperature": 38.2,
+      "respiratoryRate": 21,
+      "glucose": 140,
+      "oldpeak": 0.2
+    },
+    {
+      "time": 20,
+      "heartRate": 112,
+      "systolicBP": 98,
+      "diastolicBP": 60,
+      "spo2": 93,
+      "temperature": 38.9,
+      "respiratoryRate": 25,
+      "glucose": 165,
+      "oldpeak": 0.3
+    },
+    {
+      "time": 40,
+      "heartRate": 128,
+      "systolicBP": 82,
+      "diastolicBP": 48,
+      "spo2": 89,
+      "temperature": 39.4,
+      "respiratoryRate": 30,
+      "glucose": 190,
+      "oldpeak": 0.5
+    },
+    {
+      "time": 60,
+      "heartRate": 142,
+      "systolicBP": 72,
+      "diastolicBP": 40,
+      "spo2": 86,
+      "temperature": 39.8,
+      "respiratoryRate": 35,
+      "glucose": 210,
+      "oldpeak": 0.8
+    }
+  ]
+}
