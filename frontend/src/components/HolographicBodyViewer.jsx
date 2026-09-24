@@ -87,6 +87,7 @@ const VIEWS = [
   { id: 'upper', label: 'Upper', icon: ZoomIn },
   { id: 'lower', label: 'Lower', icon: ZoomOut },
 ];
+const VIEW_ORDER = ['front', 'right', 'back', 'left'];
 
 // ─── Animated holographic body SVG ────────────────────────────────────────────
 const HoloBody = ({ activeHotspot, onHotspotHold, onHotspotRelease, view }) => {
@@ -198,6 +199,19 @@ const HoloBody = ({ activeHotspot, onHotspotHold, onHotspotRelease, view }) => {
           <line x1="50" y1="17" x2="50" y2="68" stroke="#00d4ff" strokeWidth="0.3" strokeOpacity="0.4" strokeDasharray="2,3" />
           <line x1="32" y1="35" x2="68" y2="35" stroke="#00d4ff" strokeWidth="0.2" strokeOpacity="0.3" />
           <line x1="30" y1="50" x2="70" y2="50" stroke="#00d4ff" strokeWidth="0.2" strokeOpacity="0.3" />
+
+          {/* Mechanical anatomy: the twin is a cybernetic patient model, not a flat icon. */}
+          <path d="M39 27 L50 23 L61 27 L58 45 L50 50 L42 45 Z" fill="none" stroke="#8be9ff" strokeWidth="0.7" strokeOpacity="0.8" />
+          <path d="M43 29 L50 26 L57 29 M43 34 L57 34 M43 39 L57 39" fill="none" stroke="#8be9ff" strokeWidth="0.45" strokeOpacity="0.65" />
+          <circle cx="46" cy="34" r="1.3" fill="#ff5874" filter="url(#holo-glow)" />
+          <circle cx="54" cy="34" r="1.3" fill="#ff5874" filter="url(#holo-glow)" />
+          <path d="M47 43 Q50 46 53 43" fill="none" stroke="#f59e0b" strokeWidth="0.7" />
+          <circle cx="50" cy="54" r="3" fill="none" stroke="#00ffff" strokeWidth="0.7" />
+          <circle cx="50" cy="54" r="1" fill="#00ffff" filter="url(#holo-glow)" />
+          {[30, 42, 54, 66].map(y => <circle key={y} cx="50" cy={y} r="0.8" fill="#8be9ff" />)}
+          <circle cx="28" cy="31" r="2.5" fill="none" stroke="#00d4ff" strokeWidth="0.5" />
+          <circle cx="72" cy="31" r="2.5" fill="none" stroke="#00d4ff" strokeWidth="0.5" />
+          <path d="M31 76 L38 79 M69 76 L62 79 M31 105 L37 108 M69 105 L63 108" stroke="#8be9ff" strokeWidth="0.8" strokeOpacity="0.75" />
 
           {/* Hotspot dots */}
           {Object.entries(MEDICAL_ISSUES).map(([key, data]) => {
@@ -346,22 +360,89 @@ const IssuePopup = ({ issue, onClose }) => {
 
 // ─── Holographic Body Viewer (Main Component) ─────────────────────────────────
 const HolographicBodyViewer = ({ patient }) => {
+  const viewerRef = useRef(null);
   const [activeView, setActiveView] = useState('front');
   const [activeHotspot, setActiveHotspot] = useState(null);
   const [pinnedHotspot, setPinnedHotspot] = useState(null);
+  const [twinState, setTwinState] = useState(null);
+  const [telemetryHistory, setTelemetryHistory] = useState([]);
   const [zoom, setZoom] = useState(1);
   const [rotating, setRotating] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedOrgan, setSelectedOrgan] = useState('heart');
+  const [layerMode, setLayerMode] = useState('organs');
+  const [playbackIndex, setPlaybackIndex] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [treatmentMode, setTreatmentMode] = useState('baseline');
   const rotateInterval = useRef(null);
-  const viewOrder = ['front', 'right', 'back', 'left'];
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (viewerRef.current?.requestFullscreen) {
+        await viewerRef.current.requestFullscreen();
+      } else {
+        setIsFullscreen(value => !value);
+      }
+    } catch (error) {
+      setIsFullscreen(value => !value);
+    }
+  };
+
+  useEffect(() => {
+    const syncFullscreenState = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState);
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying || telemetryHistory.length < 2) return undefined;
+    const interval = setInterval(() => {
+      setPlaybackIndex(current => {
+        const next = current === null ? 0 : current + 1;
+        if (next >= telemetryHistory.length) {
+          setIsPlaying(false);
+          return telemetryHistory.length - 1;
+        }
+        return next;
+      });
+    }, 500);
+    return () => clearInterval(interval);
+  }, [isPlaying, telemetryHistory.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTwinState = async () => {
+      try {
+        const response = await fetch('/api/telemetry/live');
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (!cancelled && payload.data) {
+          setTwinState(payload.data);
+          setTelemetryHistory(payload.data.telemetryHistory || []);
+        }
+      } catch (error) {
+        // The static patient profile remains available if the API is offline.
+      }
+    };
+
+    fetchTwinState();
+    const interval = setInterval(fetchTwinState, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   // Auto rotation
   useEffect(() => {
     if (autoRotate) {
       rotateInterval.current = setInterval(() => {
         setActiveView(prev => {
-          const idx = viewOrder.indexOf(prev);
-          return viewOrder[(idx + 1) % viewOrder.length];
+          const idx = VIEW_ORDER.indexOf(prev);
+          return VIEW_ORDER[(idx + 1) % VIEW_ORDER.length];
         });
       }, 2500);
     }
@@ -385,9 +466,45 @@ const HolographicBodyViewer = ({ patient }) => {
   const issues = Object.values(MEDICAL_ISSUES);
   const highCount = issues.filter(i => i.severity === 'high').length;
   const modCount = issues.filter(i => i.severity === 'moderate').length;
+  const liveVitals = twinState?.currentVitals || {};
+  const liveRisk = twinState?.hemodynamics?.compositeRiskScore;
+  const playbackPoint = playbackIndex === null ? null : telemetryHistory[playbackIndex];
+  const vitals = playbackPoint || liveVitals;
+  const risk = playbackPoint?.riskScore ?? liveRisk;
+  const twinStatus = twinState?.adverseEvaluation?.overallStatus || 'SYNCING';
+  const statusColor = twinStatus === 'CRITICAL' ? 'text-rose-400' : twinStatus === 'WARNING' ? 'text-amber-400' : 'text-emerald-400';
+  const chartSource = telemetryHistory.length > 1 ? telemetryHistory : [{ currentVitals: liveVitals, riskScore: liveRisk || 0 }];
+  const chartPath = (readValue) => chartSource.map((point, index) => {
+    const value = Number(readValue(point)) || 0;
+    const x = chartSource.length === 1 ? 50 : (index / (chartSource.length - 1)) * 100;
+    const y = 34 - Math.min(30, Math.max(0, value)) * 0.9;
+    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ');
+
+  const charts = [
+    { label: 'Heart rate', value: `${vitals.heartRate ?? '--'} bpm`, color: '#fb7185', path: chartPath(point => (point.currentVitals?.heartRate || 0) / 4) },
+    { label: 'Blood pressure', value: `${vitals.systolicBP ?? '--'}/${vitals.diastolicBP ?? '--'}`, color: '#38bdf8', path: chartPath(point => (point.currentVitals?.systolicBP || 0) / 4) },
+    { label: 'SpO2', value: `${vitals.spo2 ?? '--'}%`, color: '#34d399', path: chartPath(point => point.currentVitals?.spo2 || 0) },
+    { label: 'Risk score', value: `${risk ?? '--'}%`, color: '#fbbf24', path: chartPath(point => point.riskScore || 0) },
+  ];
+  const organHealth = twinState?.organHealth || { heart: 95, lungs: 98, brain: 96, kidneys: 92 };
+  const selectedOrganData = {
+    heart: { label: 'Heart', value: organHealth.heart, metric: `${vitals.heartRate ?? '--'} bpm`, detail: 'Cardiac workload and rhythm stability' },
+    lungs: { label: 'Lungs', value: organHealth.lungs, metric: `${vitals.spo2 ?? '--'}% SpO2`, detail: 'Oxygenation and respiratory reserve' },
+    brain: { label: 'Brain', value: organHealth.brain, metric: `MAP ${twinState?.hemodynamics?.map ?? '--'}`, detail: 'Perfusion and neurological risk' },
+    kidneys: { label: 'Kidneys', value: organHealth.kidneys, metric: `${vitals.glucose ?? '--'} mg/dL`, detail: 'Perfusion and metabolic monitoring' },
+  }[selectedOrgan];
+  const patientConditions = patient?.conditions || patient?.medicalHistory?.conditions || [];
+  const patientMedications = patient?.medications || [];
+  const patientAllergies = patient?.allergies || [];
+  const patientGenomics = patient?.biomarkers?.pharmacogenomics || {};
+  const baselineVitals = patient?.vitals || {};
+  const treatmentFactor = treatmentMode === 'supportive' ? 0.82 : treatmentMode === 'aggressive' ? 0.62 : 1;
+  const projectedRisk = Math.max(1, Math.round((Number(risk) || 0) * treatmentFactor));
+  const isEmergency = twinStatus === 'CRITICAL';
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-cyan-900/50 shadow-2xl"
+    <div ref={viewerRef} className={`${isFullscreen ? 'fixed inset-0 z-50 flex min-h-screen flex-col rounded-none' : ''} rounded-2xl overflow-hidden border border-cyan-900/50 shadow-2xl`}
       style={{ background: 'linear-gradient(180deg, #060e1c 0%, #020810 100%)' }}>
 
       {/* Top header bar */}
@@ -396,12 +513,12 @@ const HolographicBodyViewer = ({ patient }) => {
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
             <span className="text-cyan-300 text-xs font-bold font-mono tracking-wider">
-              HOLOGRAPHIC BODY SIMULATION
+              LIVE VIRTUAL PATIENT TWIN
             </span>
           </div>
           <span className="text-slate-600 text-xs">|</span>
           <span className="text-slate-400 text-xs font-mono">
-            {patient?.name || 'John Doe'} · {patient?.age || '55'}y
+            {patient?.name || 'John Doe'} · {patient?.age || '55'}y · {twinState ? 'Telemetry synced' : 'Connecting'}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -411,10 +528,95 @@ const HolographicBodyViewer = ({ patient }) => {
           <span className="flex items-center gap-1 text-[11px] font-bold bg-amber-950/50 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{modCount} Moderate
           </span>
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit full screen' : 'Open full screen'}
+            aria-label={isFullscreen ? 'Exit full screen' : 'Open full screen'}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-700/50 bg-cyan-950/40 text-cyan-300 transition hover:border-cyan-400 hover:text-white"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      <div className="flex gap-0">
+      <div className="grid grid-cols-2 gap-2 border-b border-cyan-900/40 bg-cyan-950/20 px-5 py-3 sm:grid-cols-5">
+        <div><p className="text-[9px] uppercase tracking-wider text-slate-500">Twin status</p><p className={`font-mono text-sm font-bold ${statusColor}`}>{twinStatus}</p></div>
+        {charts.map(chart => (
+          <div key={chart.label}>
+            <div className="flex items-center justify-between gap-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">{chart.label}</p><p className="font-mono text-[11px] text-cyan-200">{chart.value}</p></div>
+            <svg viewBox="0 0 100 36" preserveAspectRatio="none" className="mt-1 h-8 w-full overflow-visible">
+              <path d="M 0 34 L 100 34" stroke="#164e63" strokeWidth="0.6" />
+              <path d={chart.path} fill="none" stroke={chart.color} strokeWidth="1.8" vectorEffect="non-scaling-stroke" />
+            </svg>
+          </div>
+        ))}
+      </div>
+
+      {isEmergency && (
+        <div className="flex items-center gap-3 border-b border-rose-500/60 bg-rose-950/70 px-5 py-3 text-rose-100 animate-pulse">
+          <AlertCircle className="h-5 w-5 shrink-0 text-rose-300" />
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-wider">Emergency mode active</p><p className="truncate text-[11px] text-rose-200">{twinState?.adverseEvaluation?.predictedEvents?.[0]?.title || 'Critical deterioration detected'} · Immediate clinical review required</p></div>
+          <span className="font-mono text-xs font-bold text-rose-300">RISK {risk ?? '--'}%</span>
+        </div>
+      )}
+
+      <div className="border-b border-cyan-900/40 bg-[#071321] p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div><p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Patient replica profile</p><p className="text-xs text-slate-500">EHR baseline + wearable state + physiological twin</p></div>
+          <span className="rounded-full border border-cyan-700/50 bg-cyan-400/10 px-2.5 py-1 font-mono text-[10px] text-cyan-200">ID: {patient?.id || twinState?.patientProfile?.id || 'SYNCING'}</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_1fr_1fr]">
+          <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
+            <p className="text-lg font-bold text-white">{patient?.name || twinState?.patientProfile?.name || 'Patient syncing...'}</p>
+            <p className="mt-1 text-[11px] text-slate-400">{patient?.age || twinState?.patientProfile?.age || '--'} years · {patient?.gender || twinState?.patientProfile?.gender || '--'} · {patient?.disease || 'Clinical case'}</p>
+            <p className="mt-2 text-[10px] text-slate-500">Blood group <span className="font-semibold text-slate-300">{patient?.bloodGroup || patient?.profile?.bloodGroup || '--'}</span> · BMI <span className="font-semibold text-slate-300">{patient?.profile?.bmi || patient?.bmi || '--'}</span></p>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-black/20 p-3"><p className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">Conditions</p><div className="flex flex-wrap gap-1.5">{patientConditions.length ? patientConditions.slice(0, 5).map(condition => <span key={condition} className="rounded border border-rose-900/60 bg-rose-950/30 px-2 py-1 text-[10px] text-rose-200">{condition}</span>) : <span className="text-[10px] text-slate-500">No conditions recorded</span>}</div></div>
+          <div className="rounded-lg border border-slate-800 bg-black/20 p-3"><p className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">Medication and allergies</p><p className="truncate text-[10px] text-violet-200">Rx: {patientMedications.length ? patientMedications.slice(0, 2).map(med => med.name || med).join(', ') : 'None recorded'}</p><p className="mt-2 truncate text-[10px] text-amber-200">Allergy: {patientAllergies.length ? patientAllergies.map(allergy => allergy.allergen || allergy).join(', ') : 'None recorded'}</p></div>
+          <div className="rounded-lg border border-slate-800 bg-black/20 p-3"><p className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">Baseline EHR vitals</p><p className="font-mono text-[10px] text-cyan-200">HR {baselineVitals.heartRate ?? '--'} · BP {baselineVitals.bpSystolic ?? '--'}/{baselineVitals.bpDiastolic ?? '--'}</p><p className="mt-2 font-mono text-[10px] text-cyan-200">SpO2 {baselineVitals.spO2 ?? '--'} · Glucose {baselineVitals.sugar ?? '--'}</p></div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-800 pt-2 text-[10px] text-slate-500"><span>Family history: <strong className="text-slate-300">{patient?.medicalHistory?.familyHistory || '--'}</strong></span><span>Surgery: <strong className="text-slate-300">{patient?.medicalHistory?.surgeries || '--'}</strong></span><span>Goal: <strong className="text-slate-300">{patient?.treatmentGoal || '--'}</strong></span><span>Genomics: <strong className="text-cyan-300">CYP2C19 {patientGenomics.cyp2c19 || '--'} · CYP2D6 {patientGenomics.cyp2d6 || '--'}</strong></span></div>
+      </div>
+
+      <div className="grid gap-3 border-b border-cyan-900/40 bg-black/20 p-4 xl:grid-cols-[1.1fr_1fr_1fr]">
+        <div className="rounded-xl border border-cyan-900/50 bg-cyan-950/20 p-3">
+          <div className="mb-2 flex items-center justify-between"><p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Organ health matrix</p><span className="text-[10px] text-slate-500">Select a system</span></div>
+          <div className="grid grid-cols-4 gap-2">
+            {Object.entries(organHealth).map(([organ, value]) => (
+              <button key={organ} onClick={() => setSelectedOrgan(organ)} className={`rounded-lg border p-2 text-left transition ${selectedOrgan === organ ? 'border-cyan-300 bg-cyan-400/15' : 'border-slate-800 bg-black/20 hover:border-cyan-700'}`}>
+                <p className="text-[10px] capitalize text-slate-400">{organ}</p><p className="font-mono text-sm font-bold text-cyan-100">{value}%</p><div className="mt-1 h-1 rounded-full bg-slate-800"><div className="h-1 rounded-full bg-cyan-400" style={{ width: `${value}%` }} /></div>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400"><span className="font-semibold text-cyan-200">{selectedOrganData.label}</span> · {selectedOrganData.detail} · <span className="font-mono text-cyan-300">{selectedOrganData.metric}</span></p>
+        </div>
+
+        <div className="rounded-xl border border-cyan-900/50 bg-cyan-950/20 p-3">
+          <div className="mb-2 flex items-center justify-between"><p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Wearable sensors</p><span className="flex items-center gap-1 text-[10px] text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> LIVE</span></div>
+          <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-300">
+            {['ECG patch', 'Pulse oximeter', 'BP cuff', 'Glucose sensor'].map(sensor => <div key={sensor} className="flex items-center justify-between rounded-md border border-slate-800 bg-black/20 px-2 py-1.5"><span>{sensor}</span><span className="font-mono text-emerald-400">1 Hz</span></div>)}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-cyan-900/50 bg-cyan-950/20 p-3">
+          <div className="mb-2 flex items-center justify-between"><p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">What-if treatment</p><span className="font-mono text-[10px] text-amber-300">Projected risk {projectedRisk}%</span></div>
+          <div className="flex gap-1.5">
+            {[['baseline', 'Baseline'], ['supportive', 'Supportive'], ['aggressive', 'Aggressive']].map(([mode, label]) => <button key={mode} onClick={() => setTreatmentMode(mode)} className={`flex-1 rounded-md border px-2 py-1.5 text-[10px] font-semibold ${treatmentMode === mode ? 'border-amber-400 bg-amber-400/15 text-amber-200' : 'border-slate-800 text-slate-400 hover:border-amber-700'}`}>{label}</button>)}
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-400 transition-all" style={{ width: `${Math.max(8, 100 - projectedRisk)}%` }} /></div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-b border-cyan-900/40 bg-black/30 px-4 py-2">
+        <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-cyan-500">Twin controls</span>
+        <button onClick={() => { setPlaybackIndex(null); setIsPlaying(false); }} className="rounded-md border border-cyan-800 px-2.5 py-1 text-[10px] text-cyan-200 hover:border-cyan-400">Live</button>
+        <button onClick={() => { setPlaybackIndex(0); setIsPlaying(true); }} disabled={telemetryHistory.length < 2} className="rounded-md border border-cyan-800 px-2.5 py-1 text-[10px] text-cyan-200 hover:border-cyan-400 disabled:opacity-40">Play timeline</button>
+        <span className="text-[10px] text-slate-500">{playbackIndex === null ? 'Streaming now' : `Replay ${playbackIndex + 1}/${telemetryHistory.length}`}</span>
+        <span className="ml-auto text-[10px] uppercase tracking-wider text-slate-500">Layer</span>
+        {['organs', 'sensors', 'skeleton'].map(layer => <button key={layer} onClick={() => setLayerMode(layer)} className={`rounded-md px-2 py-1 text-[10px] capitalize ${layerMode === layer ? 'bg-cyan-400/15 text-cyan-200' : 'text-slate-500 hover:text-cyan-300'}`}>{layer}</button>)}
+      </div>
+
+      <div className="flex min-h-0 flex-1 gap-0">
 
         {/* LEFT: View controls */}
         <div className="flex flex-col items-center justify-center gap-2 px-3 py-6 border-r border-cyan-900/30 bg-black/30">
@@ -454,7 +656,7 @@ const HolographicBodyViewer = ({ patient }) => {
         </div>
 
         {/* CENTER: Body viewer */}
-        <div className="flex-1 relative" style={{ minHeight: 520 }}>
+        <div className="relative min-h-[420px] flex-1 sm:min-h-[520px]">
           <div className="w-full h-full" style={{ transform: `scale(${zoom})`, transition: 'transform 0.3s', transformOrigin: 'center' }}>
             <HoloBody
               activeHotspot={activeHotspot}
@@ -468,7 +670,7 @@ const HolographicBodyViewer = ({ patient }) => {
         </div>
 
         {/* RIGHT: Issue list */}
-        <div className="w-44 flex flex-col gap-1 px-2 py-4 border-l border-cyan-900/30 bg-black/30 overflow-y-auto"
+        <div className="w-32 shrink-0 flex flex-col gap-1 overflow-y-auto border-l border-cyan-900/30 bg-black/30 px-2 py-4 sm:w-44"
           style={{ maxHeight: 520 }}>
           <p className="text-[9px] font-mono uppercase tracking-widest text-cyan-500/50 px-1 mb-1">Issue Map</p>
           {Object.entries(MEDICAL_ISSUES).map(([key, data]) => {
