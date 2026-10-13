@@ -160,233 +160,207 @@ const InfoHint = ({ text }) => (
 
 const ClinicalVitalsStrip = ({ patient }) => {
   const vitals = patient?.vitals || {};
+  const bloodPressure = vitals.bpSystolic != null
+    ? `${vitals.bpSystolic}/${vitals.bpDiastolic ?? '--'}`
+    : typeof vitals.bloodPressure === 'string'
+      ? vitals.bloodPressure
+      : vitals.bloodPressure?.systolic != null
+        ? `${vitals.bloodPressure.systolic}/${vitals.bloodPressure.diastolic ?? '--'}`
+        : null;
+  const temperature = vitals.temperature;
+  const temperatureUnit = vitals.temperatureUnit || (temperature > 45 ? '°F' : '°C');
+  const recordedAt = vitals.lastUpdated
+    ? new Date(vitals.lastUpdated).toLocaleString()
+    : null;
   const metrics = [
-    { label: 'Heart Rate', value: `${vitals.heartRate || 72} bpm`, tone: 'bg-rose-50 text-rose-700 border-rose-200', sublabel: 'Sinus rhythm' },
-    { label: 'Blood Pressure', value: `${vitals.bloodPressure || '118/76'} mmHg`, tone: 'bg-amber-50 text-amber-700 border-amber-200', sublabel: 'Stable' },
-    { label: 'SpO2', value: `${vitals.oxygenSaturation || 98}%`, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', sublabel: 'Room air' },
-    { label: 'Temperature', value: `${vitals.temperature || 36.9}°C`, tone: 'bg-cyan-50 text-cyan-700 border-cyan-200', sublabel: 'Afebrile' },
-    { label: 'Respiratory', value: `${vitals.respiratoryRate || 16}/min`, tone: 'bg-violet-50 text-violet-700 border-violet-200', sublabel: 'Regular' },
+    { label: 'Heart Rate', value: vitals.heartRate != null ? `${vitals.heartRate} bpm` : null },
+    { label: 'Blood Pressure', value: bloodPressure ? `${bloodPressure} mmHg` : null },
+    { label: 'SpO₂', value: (vitals.spO2 ?? vitals.oxygenSaturation) != null ? `${vitals.spO2 ?? vitals.oxygenSaturation}%` : null },
+    { label: 'Temperature', value: temperature != null ? `${temperature} ${temperatureUnit}` : null },
+    { label: 'Respiratory Rate', value: vitals.respiratoryRate != null ? `${vitals.respiratoryRate}/min` : null },
   ];
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
       {metrics.map((metric) => (
-        <div key={metric.label} className={`rounded-2xl border p-3 ${metric.tone}`}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] opacity-75">{metric.label}</p>
-          <p className="mt-2 text-lg font-bold">{metric.value}</p>
-          <p className="mt-1 text-[10px] font-medium opacity-80">{metric.sublabel}</p>
+        <div key={metric.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{metric.label}</p>
+          <p className="mt-2 text-lg font-bold text-slate-900">{metric.value || '—'}</p>
+          <p className="mt-1 text-[10px] font-medium text-slate-500">
+            {metric.value ? (recordedAt ? `Recorded ${recordedAt}` : 'In patient record') : 'Not recorded'}
+          </p>
         </div>
       ))}
     </div>
   );
 };
 
-const SystemHealthPanel = ({ patient }) => {
-  const riskIndex = patient?.metrics?.riskScore || 31;
-  const systems = [
-    { name: 'Cardiac', value: 86, accent: 'emerald' },
-    { name: 'Metabolic', value: 72, accent: 'cyan' },
-    { name: 'Renal', value: 79, accent: 'violet' },
-    { name: 'Neurologic', value: 88, accent: 'amber' },
-  ];
+const formatRiskScore = (value) => {
+  if (value == null || value === '') return null;
+  const numericScore = Number(value);
+  if (!Number.isFinite(numericScore)) return null;
+  const percentage = numericScore <= 1 ? numericScore * 100 : numericScore;
+  return Math.round(Math.min(100, Math.max(0, percentage)));
+};
 
-  const barMap = {
-    emerald: 'from-emerald-400 to-lime-300',
-    cyan: 'from-cyan-400 to-sky-300',
-    violet: 'from-violet-400 to-fuchsia-300',
-    amber: 'from-amber-400 to-yellow-300',
-  };
+const SystemHealthPanel = ({ patient }) => {
+  const riskScore = formatRiskScore(patient?.metrics?.riskScore);
+  const baselineHealthIndex = patient?.metrics?.baselineHealthIndex;
 
   return (
     <div className="rounded-[28px] border border-slate-200 bg-slate-950/90 p-4 text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)]">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300">Physiology</p>
-          <p className="mt-1 text-lg font-semibold">System status</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300">Model outputs</p>
+          <p className="mt-1 text-lg font-semibold">Baseline indicators</p>
         </div>
-        <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-200">
-          Risk {riskIndex}
+        <span className="rounded-full border border-slate-500/60 bg-slate-800 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-200">
+          Prototype estimate
         </span>
       </div>
-      <div className="space-y-3">
-        {systems.map((system) => (
-          <div key={system.name}>
-            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-300">
-              <span>{system.name}</span>
-              <span>{system.value}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-700/80">
-              <div className={`h-full rounded-full bg-gradient-to-r ${barMap[system.accent]}`} style={{ width: `${system.value}%` }} />
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Risk estimate</p>
+          <p className="mt-2 text-2xl font-semibold">{riskScore != null ? `${riskScore}/100` : '—'}</p>
+          <p className="mt-1 text-[10px] text-slate-400">Derived from intake data</p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Baseline index</p>
+          <p className="mt-2 text-2xl font-semibold">{baselineHealthIndex ?? '—'}{baselineHealthIndex != null ? '/100' : ''}</p>
+          <p className="mt-1 text-[10px] text-slate-400">Model output, not a vital</p>
+        </div>
       </div>
+      <p className="mt-3 text-[10px] leading-4 text-slate-400">
+        Estimates are illustrative decision-support outputs and are not a clinical assessment.
+      </p>
     </div>
   );
 };
 
 const DigitalTwinPortrait = ({ patient }) => {
-  const heartRate = patient?.vitals?.heartRate || 72;
-  const bloodPressure = patient?.vitals?.bloodPressure || '118/76';
-  const oxygen = patient?.vitals?.oxygenSaturation || 98;
-  const glucose = patient?.vitals?.sugar || patient?.vitals?.glucose || 142;
-  const bmi = patient?.biomarkers?.bmi || patient?.metrics?.bmi || 27.4;
-  const riskIndex = patient?.metrics?.riskScore || 31;
-  const trajectory = [65, 72, 70, 78, 82, 80, 86, 88];
-  const systemHealth = [
-    { name: 'Cardiac', value: 86, accent: 'emerald' },
-    { name: 'Metabolic', value: 72, accent: 'cyan' },
-    { name: 'Renal', value: 79, accent: 'violet' },
-    { name: 'Neurologic', value: 88, accent: 'amber' },
-  ];
-
-  const getBarColor = (accent) => {
-    const map = {
-      emerald: 'from-emerald-400 to-lime-300',
-      cyan: 'from-cyan-400 to-sky-300',
-      violet: 'from-violet-400 to-fuchsia-300',
-      amber: 'from-amber-400 to-yellow-300',
-    };
-    return map[accent] || 'from-emerald-400 to-cyan-300';
-  };
+  const metrics = patient?.metrics || {};
+  const riskScore = formatRiskScore(metrics.riskScore);
+  const name = patient?.name || 'Patient record';
+  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+  const bmi = patient?.profile?.bmi ?? patient?.biomarkers?.bmi ?? metrics.bmi;
+  const diseaseLabel = patient?.disease || patient?.conditions?.[0] || 'Condition not specified';
 
   return (
-    <div className="relative mb-5 overflow-hidden rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 p-3 text-white shadow-[0_20px_35px_rgba(15,23,42,0.2)]">
-      <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-emerald-400/20 via-cyan-400/10 to-indigo-400/20 blur-2xl" />
-      <div className="absolute -right-8 top-8 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
-      <div className="relative">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200/80">Digital Twin</p>
-            <p className="mt-1 text-xs text-slate-200">Live clinical model</p>
-          </div>
-          <div className="flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-200">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
-            {riskIndex <= 35 ? 'Stable' : riskIndex <= 55 ? 'Watchlist' : 'Elevated'}
-          </div>
+    <div className="mb-5 overflow-hidden rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-4 text-white shadow-[0_20px_35px_rgba(15,23,42,0.16)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200">Digital twin record</p>
+          <p className="mt-1 text-xs text-slate-300">Patient-specific model · snapshot view</p>
         </div>
+        <span className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-200">
+          Not live telemetry
+        </span>
+      </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-slate-950/30">
-            <div className="absolute inset-x-4 top-3 h-5 rounded-full bg-gradient-to-b from-slate-100/20 to-slate-100/5" />
-            <svg viewBox="0 0 120 180" className="absolute inset-0 h-full w-full" aria-label="Digital twin silhouette">
-              <defs>
-                <linearGradient id="skinGlow" x1="0" x2="1">
-                  <stop offset="0%" stopColor="#dbeafe" />
-                  <stop offset="100%" stopColor="#a5b4fc" />
-                </linearGradient>
-                <linearGradient id="torsoGlow" x1="0" x2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.85" />
-                </linearGradient>
-              </defs>
-              <path d="M60 18c-12 0-22 10-22 22v6c0 8 5 12 12 12h20c7 0 12-4 12-12v-6c0-12-10-22-22-22Z" fill="url(#skinGlow)" opacity="0.95"/>
-              <path d="M46 46c7-7 21-7 28 0l8 14c4 7 6 18 6 27v12c0 15-12 27-27 27s-27-12-27-27V87c0-9 2-20 6-27l6-14Z" fill="url(#torsoGlow)" opacity="0.94"/>
-              <path d="M44 76h-16c-7 0-13 6-13 13v20l14 10 13-15-2-28Z" fill="#0f172a" opacity="0.65"/>
-              <path d="M76 76h16c7 0 13 6 13 13v20l-14 10-13-15 2-28Z" fill="#0f172a" opacity="0.65"/>
-              <path d="M52 88h16v28H52z" fill="#e2e8f0" opacity="0.75"/>
-              <path d="M60 93c8 0 15 6 15 14v27H45V107c0-8 7-14 15-14Z" fill="#e2e8f0" opacity="0.55"/>
-              <path d="M58 46c-2 0-3 2-3 4v7h6v-7c0-2-1-4-3-4Z" fill="#1e293b" opacity="0.65"/>
-            </svg>
-          </div>
-
-          <div className="flex-1 space-y-2">
-            <div>
-              <p className="text-lg font-semibold text-white">{patient?.name || 'Patient'}</p>
-              <p className="text-xs text-slate-300">{patient?.age || 52}y · {patient?.gender || 'Female'} · {patient?.disease || 'Diabetes'}</p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm">
-              <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-slate-300">
-                <span>Pulse</span>
-                <span>{heartRate} bpm</span>
-              </div>
-              <svg viewBox="0 0 160 28" className="h-5 w-full" preserveAspectRatio="none" aria-label="pulse waveform">
-                <path d="M0 14h18l8-8 10 16 10-20 8 18 12-10 16 8 18-10 16 20 14-12 10 6H160" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {['Cardiac', 'Endocrine', 'Renal'].map((label) => (
-                <span key={label} className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
+      <div className="mt-5 flex items-center gap-3">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-400/10 text-lg font-semibold text-emerald-100">
+          {initials || 'P'}
         </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-white/10 bg-slate-950/20 p-2">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-slate-300">BP</p>
-            <p className="mt-1 text-sm font-semibold text-white">{bloodPressure}</p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-slate-950/20 p-2">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-slate-300">O2</p>
-            <p className="mt-1 text-sm font-semibold text-white">{oxygen}%</p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-slate-950/20 p-2">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-slate-300">Glucose</p>
-            <p className="mt-1 text-sm font-semibold text-white">{glucose} mg/dL</p>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/20 p-2">
-          <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-slate-300">
-            <span>Digital Twin Index</span>
-            <span>{Math.max(65, 100 - riskIndex)} / 100</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-700">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400"
-              style={{ width: `${Math.max(65, 100 - riskIndex)}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[10px] text-slate-300">
-            <span>BMI {Number(bmi).toFixed(1)}</span>
-            <span>Risk {riskIndex}</span>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-slate-950/20 p-2">
-          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-slate-300">
-            <span>Physiology</span>
-            <span>System status</span>
-          </div>
-          {systemHealth.map((system) => (
-            <div key={system.name} className="space-y-1">
-              <div className="flex items-center justify-between text-[10px] text-slate-200">
-                <span>{system.name}</span>
-                <span>{system.value}%</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-700/80">
-                <div
-                  className={`h-full rounded-full bg-gradient-to-r ${getBarColor(system.accent)}`}
-                  style={{ width: `${system.value}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-3 rounded-2xl border border-white/10 bg-black/10 p-2">
-          <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-slate-300">
-            <span>7-day trend</span>
-            <span>+{trajectory[trajectory.length - 1] - trajectory[0]}%</span>
-          </div>
-          <svg viewBox="0 0 180 42" className="h-10 w-full" preserveAspectRatio="none" aria-label="7-day clinical trend">
-            <polyline
-              fill="none"
-              stroke="#34d399"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              points={trajectory.map((point, index) => `${(index / (trajectory.length - 1)) * 180},${42 - point / 2}`).join(' ')}
-            />
-          </svg>
+        <div className="min-w-0">
+          <p className="truncate text-lg font-semibold text-white">{name}</p>
+          <p className="mt-0.5 text-xs text-slate-300">
+            {[patient?.age != null ? `${patient.age} years` : null, patient?.gender, diseaseLabel].filter(Boolean).join(' · ')}
+          </p>
         </div>
       </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">Risk estimate</p>
+          <p className="mt-1 text-base font-semibold">{riskScore != null ? `${riskScore}/100` : 'Not calculated'}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">BMI</p>
+          <p className="mt-1 text-base font-semibold">{bmi != null ? Number(bmi).toFixed(1) : 'Not recorded'}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-[10px] leading-4 text-slate-400">
+        Values reflect the available patient record; no wearable or bedside feed is connected.
+      </p>
     </div>
+  );
+};
+
+const PatientTimeline = ({ patient }) => {
+  const events = [];
+  const addEvent = (date, title, detail) => {
+    const timestamp = date ? new Date(date) : null;
+    if (timestamp && !Number.isNaN(timestamp.getTime())) {
+      events.push({ timestamp, title, detail });
+    }
+  };
+
+  addEvent(patient?.createdAt, 'Patient record created', 'Registry record timestamp');
+  const hasVitalReading = Object.entries(patient?.vitals || {}).some(([key, value]) => key !== 'lastUpdated' && value != null && value !== '');
+  if (hasVitalReading) {
+    addEvent(patient?.vitals?.lastUpdated, 'Vitals snapshot recorded', 'Timestamp supplied with the patient snapshot');
+  }
+  addEvent(patient?.staging?.dateOfDiagnosis, 'Diagnosis date recorded', patient?.staging?.stage ? `Stage ${patient.staging.stage}` : 'Clinical staging');
+  addEvent(patient?.performanceStatus?.assessmentDate, 'Performance status assessed', 'Assessment date from patient record');
+
+  (patient?.medications || []).forEach((medication) => {
+    addEvent(medication.startDate, 'Medication started', [medication.name, medication.dosage].filter(Boolean).join(' · ') || 'Medication record');
+  });
+  (patient?.medicalHistory?.previousTreatments || []).forEach((treatment) => {
+    addEvent(treatment.startDate, 'Prior treatment recorded', [treatment.treatmentName, treatment.response].filter(Boolean).join(' · '));
+  });
+  (patient?.alerts || []).forEach((alert) => {
+    addEvent(alert.createdAt, 'Clinical alert recorded', [alert.severity, alert.message].filter(Boolean).join(' · '));
+  });
+  Object.entries(patient?.biomarkers?.labBiomarkers || {}).forEach(([name, biomarker]) => {
+    if (biomarker?.value != null) {
+      addEvent(biomarker.date, `${name.replace(/([A-Z])/g, ' $1')} result`, `${biomarker.value}${biomarker.unit ? ` ${biomarker.unit}` : ''}`);
+    }
+  });
+  (patient?.biomarkers?.genomics?.variants || []).forEach((variant) => {
+    addEvent(variant.testDate, 'Genomic test recorded', [variant.gene, variant.variant].filter(Boolean).join(' · '));
+  });
+
+  events.sort((a, b) => b.timestamp - a.timestamp);
+  const visibleEvents = events.slice(0, 6);
+
+  return (
+    <Panel className="!p-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Longitudinal record</p>
+          <h4 className="mt-1 font-semibold text-slate-800">Patient timeline</h4>
+        </div>
+        <Clock className="h-4 w-4 text-slate-400" aria-hidden="true" />
+      </div>
+      {visibleEvents.length ? (
+        <ol className="space-y-0">
+          {visibleEvents.map((event, index) => (
+            <li key={`${event.title}-${event.timestamp.toISOString()}-${index}`} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <span className={`mt-1 h-2.5 w-2.5 rounded-full ${index === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                {index < visibleEvents.length - 1 && <span className="mt-1 min-h-8 w-px flex-1 bg-slate-200" />}
+              </div>
+              <div className="min-w-0 flex-1 pb-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  {event.timestamp.toLocaleDateString()}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{event.title}</p>
+                {event.detail && <p className="mt-0.5 break-words text-xs text-slate-500">{event.detail}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-5 text-center">
+          <p className="text-sm font-medium text-slate-600">No dated events in this record</p>
+          <p className="mt-1 text-xs text-slate-500">Add dates to vitals, labs, medications, or history to build the timeline.</p>
+        </div>
+      )}
+      <p className="border-t border-slate-100 pt-3 text-[10px] leading-4 text-slate-400">
+        Timeline entries are sourced from dated patient-record fields; no events are inferred.
+      </p>
+    </Panel>
   );
 };
 
@@ -1088,10 +1062,28 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           {[
-            { label: 'Alerts', value: '2 active', tone: 'bg-rose-50 text-rose-700 border-rose-200' },
-            { label: 'Treatment Adherence', value: '92%', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-            { label: 'Last Clinical Review', value: '11:40', tone: 'bg-sky-50 text-sky-700 border-sky-200' },
-            { label: 'Projected Outcome', value: '+23%', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
+            {
+              label: 'Open alerts',
+              value: Array.isArray(patient?.alerts)
+                ? `${patient.alerts.filter((alert) => !alert.acknowledged).length} recorded`
+                : 'Not recorded',
+              tone: 'bg-rose-50 text-rose-700 border-rose-200',
+            },
+            {
+              label: 'Medications',
+              value: Array.isArray(patient?.medications) ? `${patient.medications.length} on file` : 'Not recorded',
+              tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            },
+            {
+              label: 'Conditions',
+              value: Array.isArray(patient?.conditions) ? `${patient.conditions.length} on file` : 'Not recorded',
+              tone: 'bg-sky-50 text-sky-700 border-sky-200',
+            },
+            {
+              label: 'Baseline health index',
+              value: patient?.metrics?.baselineHealthIndex != null ? `${patient.metrics.baselineHealthIndex}/100` : 'Not calculated',
+              tone: 'bg-violet-50 text-violet-700 border-violet-200',
+            },
           ].map((card) => (
             <div key={card.label} className={`rounded-2xl border p-3 ${card.tone}`}>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] opacity-75">{card.label}</p>
@@ -1104,11 +1096,11 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
           <Panel className="!p-4">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">ICU monitoring</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-800">Live patient overview</h3>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Patient record snapshot</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-800">Recorded observations</h3>
               </div>
-              <div className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">
-                Stable
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-600">
+                Snapshot · not live
               </div>
             </div>
             <ClinicalVitalsStrip patient={patient} />
@@ -1123,20 +1115,17 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
             <Panel className="!p-4">
               <DigitalTwinPortrait patient={patient} />
               
-              <div className="mt-2">
-                <h3 className="font-semibold text-slate-900">{patient?.name || 'Patient'}</h3>
-                <p className="text-sm text-slate-500">{patient?.age}y {patient?.gender} | {patient?.disease}</p>
-              </div>
-              
               {/* Key Constraints */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2">
                   <span className="text-xs text-amber-700">Budget</span>
-                  <span className="font-bold text-amber-800">${patient?.socioEconomic?.monthlyMedicationBudget || 150}/mo</span>
+                  <span className="font-bold text-amber-800">
+                    {patient?.socioEconomic?.monthlyMedicationBudget != null ? `$${patient.socioEconomic.monthlyMedicationBudget}/mo` : 'Not recorded'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
                   <span className="text-xs text-slate-600">Insurance</span>
-                  <span className="font-medium text-slate-800">{patient?.socioEconomic?.insuranceTier || 'Basic'}</span>
+                  <span className="font-medium text-slate-800">{patient?.socioEconomic?.insuranceTier || 'Not recorded'}</span>
                 </div>
               </div>
 
@@ -1144,11 +1133,12 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
               <div className="mt-4">
                 <p className="text-xs font-medium text-slate-500 mb-2">CONDITIONS</p>
                 <div className="flex flex-wrap gap-1">
-                  {(patient?.conditions || ['Type 2 Diabetes', 'Hypertension']).map((c, i) => (
+                  {(patient?.conditions || []).map((c, i) => (
                     <span key={i} className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 border border-red-100">
                       {c}
                     </span>
                   ))}
+                  {!patient?.conditions?.length && <span className="text-xs text-slate-500">No conditions recorded</span>}
                 </div>
               </div>
 
@@ -1231,14 +1221,17 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
                   Expand
                 </button>
               </div>
-              <div className="h-32 flex items-center justify-center bg-slate-50 rounded-lg">
-                {result ? (
-                  <div className="text-center">
-                    <TrendingUp className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                    <p className="text-sm text-slate-600">+23% projected improvement</p>
+              <div className="flex h-32 items-center justify-center rounded-lg bg-slate-50 px-4 text-center">
+                {result && generateConsensusTrajectory()?.length ? (
+                  <div>
+                    <TrendingUp className="mx-auto mb-2 h-7 w-7 text-emerald-600" />
+                    <p className="text-sm font-medium text-slate-700">Modeled projection available</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Illustrative model output, not an observed outcome.</p>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-400">Run consensus to see trajectory</p>
+                  <p className="text-sm text-slate-500">
+                    {result ? 'No trajectory data returned by the model.' : 'Run consensus to request a model projection.'}
+                  </p>
                 )}
               </div>
             </Panel>
@@ -1250,10 +1243,14 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
                 <div className="space-y-3">
                   <div className="rounded-lg bg-white p-3 border border-emerald-200">
                     <p className="text-sm font-medium text-emerald-800">
-                      {result.recommendation?.best?.name || 'Conservative Generic Protocol'}
+                      {result.recommendation?.best?.name || 'Recommendation available'}
                     </p>
                     <p className="text-xs text-emerald-600 mt-1">
-                      HERA-validated | Within budget
+                      {result.recommendationStatus
+                        ? `Safety status: ${result.recommendationStatus}`
+                        : result.clinicalReviewRequired
+                          ? 'Clinician review required'
+                          : 'Review status unavailable'}
                     </p>
                   </div>
                   <button
@@ -1271,28 +1268,7 @@ const Dashboard = ({ role = 'doctor', providedId, providedSection }) => {
               )}
             </Panel>
 
-            <Panel className="!p-4">
-              <h4 className="mb-3 font-semibold text-slate-700">Intervention timeline</h4>
-              <div className="space-y-3">
-                {[
-                  ['08:15', 'BP recheck', 'Within target range'],
-                  ['09:00', 'Medication review', 'Dose adjusted by pharmacologist'],
-                  ['10:30', 'Safety check', 'HERA budget constraint validated'],
-                ].map(([time, title, detail]) => (
-                  <div key={time} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                      <div className="mt-1 h-full w-px bg-slate-200" />
-                    </div>
-                    <div className="flex-1 pb-2">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{time}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-800">{title}</p>
-                      <p className="text-xs text-slate-500">{detail}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Panel>
+            <PatientTimeline patient={patient} />
           </div>
         </div>
       </div>

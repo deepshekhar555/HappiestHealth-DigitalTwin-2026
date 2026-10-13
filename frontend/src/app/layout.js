@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "BioTwin AI",
-  description: "AI-Powered Medical Digital Twin Simulation and Consensus Platform",
+  title: "BioTwin AI | Clinical Decision-Support Prototype",
+  description: "A research prototype for patient-specific case review, multi-agent reasoning, and illustrative scenario modeling.",
 };
 
 export default function RootLayout({ children }) {

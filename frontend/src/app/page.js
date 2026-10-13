@@ -11,27 +11,29 @@ export default function Home() {
   const pillars = [
     {
       icon: BrainCircuit,
-      title: 'Digital Twin Simulation',
-      text: 'Model each patient with a virtual health profile and test multiple treatment strategies before clinical execution.',
+      title: 'Patient-specific model',
+      text: 'Organize available profile, biomarker, and vital data into a structured view for case exploration.',
     },
     {
       icon: Waves,
-      title: 'Continuous Learning',
-      text: 'Capture real outcomes, feed them back into the platform, and steadily improve prediction accuracy.',
+      title: 'Modeled trajectories',
+      text: 'Explore illustrative scenario outputs from the prototype; projections are not measured patient outcomes.',
     },
     {
       icon: ShieldCheck,
-      title: 'Secure Clinical Workflow',
-      text: 'Bridge intake, explainability, EHR sync, and wearable telemetry in one protected decision environment.',
+      title: 'Reviewable workflow',
+      text: 'Follow patient context, agent perspectives, safety flags, and recommendation review in one interface.',
     },
     {
       icon: FlaskConical,
-      title: 'Biomarker Translation',
-      text: 'Bring lab panels and biomarker context into targetability, cohort match, and drug intelligence layers.',
+      title: 'Biomarker context',
+      text: 'Bring recorded lab and genomic details into the case view when those data are available.',
     },
   ];
 
   const [demoCases, setDemoCases] = React.useState([]);
+  const [demoCasesError, setDemoCasesError] = React.useState('');
+  const [demoCasesLoading, setDemoCasesLoading] = React.useState(true);
   const [launchError, setLaunchError] = React.useState('');
   const [isLaunching, setIsLaunching] = React.useState(false);
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
@@ -42,10 +44,21 @@ export default function Home() {
       setIsLoggedIn(true);
     }
     apiClient.get('/patient/demo-cases')
-      .then((response) => setDemoCases(response.data))
+      .then((response) => {
+        setDemoCases(response.data);
+        setDemoCasesError('');
+      })
       .catch((err) => {
         console.error('Failed to load demo cases:', err);
         setDemoCases([]);
+        setDemoCasesError(
+          err.response?.status === 401 || err.response?.status === 403
+            ? 'Sign in with a clinician account to access presentation cases.'
+            : 'Presentation cases could not load. Check that the backend is running, then retry.'
+        );
+      })
+      .finally(() => {
+        setDemoCasesLoading(false);
       });
   }, []);
 
@@ -70,13 +83,13 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-0 lg:grid-cols-[1.3fr_0.9fr]">
             <div className="p-8 md:p-12">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.22em] bg-lime-100 text-lime-700">
-                <img src="/logo.jpg" alt="BioTwin Logo" className="h-5 w-5 rounded-full object-cover bg-white" /> Precision Medicine Workspace
+                <img src="/logo.jpg" alt="BioTwin Logo" className="h-5 w-5 rounded-full object-cover bg-white" /> Clinical Decision-Support Prototype
               </div>
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl text-slate-900">
-                BioTwin AI turns patient data into a treatment-safe digital twin.
+                Explore patient-specific context with BioTwin AI.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Ingest clinical data, simulate treatment protocols, compare projected outcomes, and learn from real-world recovery signals in one end-to-end platform.
+                Review structured patient records, inspect multi-agent reasoning, and explore illustrative treatment scenarios in one transparent workspace.
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
                 <button
@@ -92,12 +105,12 @@ export default function Home() {
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">System Layers</p>
               <div className="mt-6 space-y-4">
                 {[
-                  { name: 'Patient Intake', description: 'Collect and structure patient medical history, demographics, and clinical data into a comprehensive health profile.' },
-                  { name: 'Digital Twin Engine', description: 'Create a virtual replica of the patient to simulate disease progression and compare treatment outcomes.' },
-                  { name: 'Clinical Dashboard', description: 'Visualize patient metrics, risk scores, treatment recommendations, and simulation history in real-time.' },
-                  { name: 'Learning Loop', description: 'Continuously improve predictions by feeding real-world outcomes back into the AI model.' },
-                  { name: 'Secure Integration', description: 'Connect with EHR systems and wearable devices through encrypted, HIPAA-compliant API endpoints.' },
-                  { name: 'Explainable AI', description: 'Provide transparent insights into AI decisions with feature importance and what-if scenario analysis.' },
+                  { name: 'Patient Intake & Context', description: 'Structure patient demographics, history, vitals, and available biomarkers for case review.' },
+                  { name: 'Digital Twin Workspace', description: 'Explore a patient-specific model and prototype-generated scenario projections.' },
+                  { name: 'Clinical Review Dashboard', description: 'Review record data, agent perspectives, safety signals, and recommendation workflow status.' },
+                  { name: 'Outcome Feedback', description: 'The architecture includes outcome-learning concepts; validated learning from clinical outcomes is not enabled in this demo.' },
+                  { name: 'Integration Boundaries', description: 'EHR and wearable connections require deployment-specific integration and are not represented as live feeds here.' },
+                  { name: 'Explainability', description: 'Inspect reasoning and contributing factors where supported by the prototype.' },
                 ].map((layer, index) => (
                   <div key={layer.name} className="group rounded-2xl border p-4 transition-all duration-200 hover:shadow-md border-black/5 bg-white/80 hover:border-lime-300">
                     <p className="text-xs uppercase tracking-[0.2em] text-lime-700">Layer {index + 1}</p>
@@ -108,6 +121,10 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div role="note" className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950">
+          <strong>Demo and research prototype:</strong> generated scores and scenario projections are heuristic and have not been clinically validated. This application is not a medical device, does not provide medical advice, and is not intended for diagnosis or treatment decisions. It is not a claim of HIPAA compliance or a live EHR/wearable connection.
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -137,6 +154,23 @@ export default function Home() {
             <div className="mb-4 rounded-xl border p-3 text-sm border-rose-200 bg-rose-50 text-rose-700">
               {launchError}
             </div>
+          )}
+          {demoCasesLoading && (
+            <p className="mb-4 text-sm text-slate-500" role="status">Loading presentation cases…</p>
+          )}
+          {!demoCasesLoading && demoCasesError && (
+            <div className="mb-4 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between" role="status">
+              <p>{demoCasesError}</p>
+              <button
+                onClick={() => router.push('/login')}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-700"
+              >
+                Sign in <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {!demoCasesLoading && !demoCasesError && demoCases.length === 0 && (
+            <p className="mb-4 text-sm text-slate-500" role="status">No presentation cases are configured yet.</p>
           )}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {demoCases.map((demo) => (

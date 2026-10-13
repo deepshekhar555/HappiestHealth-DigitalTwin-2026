@@ -26,9 +26,12 @@
 
 ## Overview
 
-**BioTwin AI** is an end-to-end personalized medicine platform that creates a **digital twin** of a patient, simulates treatment strategies using **multi-agent AI consensus**, explains risk drivers through **explainable AI (XAI)**, and continuously learns from real-world outcomes.
+**BioTwin AI** is a clinical decision-support research prototype for organizing patient context, exploring treatment scenarios with multi-agent reasoning, and presenting explainability signals. Its digital twin and trajectory outputs are heuristic/demo models; the project does not establish clinically validated predictions or continuously learn from real-world outcomes.
 
-The platform implements a sophisticated **6-layer architecture** designed for clinical decision support, featuring four specialized AI agents that collaborate to generate treatment recommendations while respecting economic constraints and patient-specific factors.
+The platform demonstrates a **6-layer architecture** for clinical decision-support workflows, featuring four specialized AI agents that analyze patient-specific factors and economic constraints. Outputs are intended for demonstration and research only.
+
+> [!IMPORTANT]
+> **Not for clinical use.** This software is not a medical device and does not provide medical advice or support diagnosis or treatment decisions. Scores and scenario projections are not clinically validated. Do not enter identifiable patient data into a demo deployment. The repository does not claim HIPAA compliance or a live EHR/wearable integration; those require separately designed, validated, and secured systems.
 
 ---
 
@@ -112,12 +115,12 @@ The platform implements a sophisticated **6-layer architecture** designed for cl
 
 | Feature | Description |
 |---------|-------------|
-| **Digital Twin Engine** | Creates computable patient models from clinical data |
+| **Digital Twin Workspace** | Organizes available patient data into a computable prototype model |
 | **Multi-Agent AI Consensus** | 4 specialized AI agents collaborate on treatment plans |
-| **Treatment Simulation** | Compare Conservative, Standard, and Aggressive protocols |
+| **Scenario Modeling** | Explore heuristic Conservative, Standard, and Aggressive protocol outputs |
 | **Explainable AI (XAI)** | Transparent reasoning with feature importance analysis |
 | **Human-in-the-Loop (HITL)** | Clinicians can steer AI deliberations in real-time |
-| **Continuous Learning** | System improves from real-world outcome feedback |
+| **Outcome Feedback Concepts** | Demonstrates an architecture for outcome feedback; validated clinical learning is not enabled |
 
 ### Advanced AI Features
 
